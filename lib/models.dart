@@ -45,9 +45,21 @@ class Expense {
 }
 
 class Member {
+  final int? id;
   String name;
 
-  Member({required this.name});
+  Member({
+    this.id,
+    required this.name
+  });
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Member && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
 // class Group {
 //   List<Member> members;

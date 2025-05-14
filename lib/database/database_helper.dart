@@ -2,6 +2,8 @@ import 'dart:convert';  // Dla konwersji na JSON
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '/models.dart';
+import 'package:collection/collection.dart';
+
 
 class DatabaseHelper {
   static Database? _database;
@@ -111,7 +113,7 @@ class DatabaseHelper {
           members: (groupMap['members'] ?? '')
               .toString()
               .split(',')
-              .map((name) => Member(name: name.trim())) // Tworzymy obiekty Member z imion
+              .mapIndexed((index, name) => Member(id: index, name: name.trim()))
               .toList(),
         ),
       );
@@ -119,6 +121,22 @@ class DatabaseHelper {
 
     return groups;
   }
+  Future<void> deleteGroup(int groupId) async {
+    final db = await database;
+    
+    await db.delete(
+      'expenses',
+      where: 'group_id = ?',
+      whereArgs: [groupId],
+    );
+
+    await db.delete(
+      'groups',
+      where: 'id = ?',
+      whereArgs: [groupId],
+    );
+  }
+
 
   // Pobieranie wydatków dla grupy
   Future<List<Expense>> getExpenses(int groupId) async {
@@ -132,25 +150,28 @@ class DatabaseHelper {
     return List.generate(result.length, (i) {
       final row = result[i];
       return Expense(
+        id: row['id'] != null ? row['id'] as int : 0, // lub lepiej: null jeśli `id` jest nullable
         description: row['description'] as String,
         person: Member(name: row['person'] as String),
-        amount: row['amount'] as double,
+        amount: row['amount'] is int ? (row['amount'] as int).toDouble() : row['amount'] as double,
       );
     });
+
   }
 
   // Aktualizowanie wydatku
-  Future<void> updateExpense(Expense expense, int id) async {
+  Future<void> updateExpense(Expense expense, int groupId) async {
     final db = await database;
     await db.update(
       'expenses',
       {
         'description': expense.description,
-        'person': expense.person,
         'amount': expense.amount,
+        // 'person_id': expense.person.id,
+        'group_id': groupId,
       },
       where: 'id = ?',
-      whereArgs: [id],
+      whereArgs: [expense.id],
     );
   }
 

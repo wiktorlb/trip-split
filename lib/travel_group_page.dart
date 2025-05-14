@@ -13,7 +13,7 @@ class TravelGroupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Podróże')),
+      appBar: AppBar(title: Text('TRIP-SPLIT')),
       body: Column(
         children: [
           ElevatedButton(

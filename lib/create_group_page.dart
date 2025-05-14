@@ -10,9 +10,10 @@ class CreateGroupPage extends StatefulWidget {
 class _CreateGroupPageState extends State<CreateGroupPage> {
   final _countryController = TextEditingController();
   final _currencyController = TextEditingController();
-  final _membersController = TextEditingController();  // Pole tekstowe dla członków
+  final _membersController = TextEditingController();
   late DatabaseHelper _databaseHelper;
-  List<Member> selectedMembers = [];  // Lista wybranych członków
+  List<Member> selectedMembers = [];
+  int _nextMemberId = 1;
 
   @override
   void initState() {
@@ -29,21 +30,23 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         id: 0,
         country: country,
         currency: currency,
-        members: selectedMembers,  // Lista obiektów Member
+        members: selectedMembers,
       );
       await _databaseHelper.insertGroup(group);
       Navigator.pop(context);
     }
   }
 
-  // Funkcja, która dodaje członka do listy
   void _addMember() {
     final memberName = _membersController.text.trim();
-    if (memberName.isNotEmpty && !selectedMembers.any((member) => member.name == memberName)) {
+    if (memberName.isNotEmpty &&
+        !selectedMembers.any((member) => member.name == memberName)) {
       setState(() {
-        selectedMembers.add(Member(name: memberName));  // Dodajemy obiekt Member
+        selectedMembers.add(
+          Member(id: _nextMemberId++, name: memberName),
+        );
       });
-      _membersController.clear();  // Czyścimy pole po dodaniu członka
+      _membersController.clear();
     }
   }
 
@@ -51,39 +54,58 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Utwórz grupę')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(controller: _countryController, decoration: InputDecoration(labelText: 'Kraj')),
-            TextField(controller: _currencyController, decoration: InputDecoration(labelText: 'Waluta')),
-            SizedBox(height: 20),
-            TextField(
-              controller: _membersController,
-              decoration: InputDecoration(labelText: 'Dodaj członka'),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(), // schowanie klawiatury po kliknięciu poza pole
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _countryController,
+                  decoration: InputDecoration(labelText: 'Kraj'),
+                ),
+                TextField(
+                  controller: _currencyController,
+                  decoration: InputDecoration(labelText: 'Waluta'),
+                ),
+                SizedBox(height: 20),
+                TextField(
+                  controller: _membersController,
+                  decoration: InputDecoration(labelText: 'Dodaj członka'),
+                  onSubmitted: (_) => _addMember(),
+                ),
+                ElevatedButton(
+                  onPressed: _addMember,
+                  child: Text('Dodaj członka'),
+                ),
+                SizedBox(height: 20),
+                Text('Wybrani członkowie:'),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: selectedMembers.map((member) {
+                    return Chip(
+                      label: Text(member.name),
+                      onDeleted: () {
+                        setState(() {
+                          selectedMembers.remove(member);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                SizedBox(height: 40),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _createGroup,
+                    child: Text('Utwórz grupę'),
+                  ),
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: _addMember,
-              child: Text('Dodaj członka'),
-            ),
-            SizedBox(height: 20),
-            Text('Wybrani członkowie:'),
-            // Wyświetlanie wybranych członków
-            Wrap(
-              children: selectedMembers.map((member) {
-                return Chip(
-                  label: Text(member.name),  // Wyświetlamy nazwisko członka
-                  onDeleted: () {
-                    setState(() {
-                      selectedMembers.remove(member);  // Usuwamy członka
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(onPressed: _createGroup, child: Text('Utwórz grupę')),
-          ],
+          ),
         ),
       ),
     );

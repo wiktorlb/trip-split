@@ -18,36 +18,36 @@ class _ExpensePageState extends State<ExpensePage> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
-  Member? _selectedMember; // This will hold the selected member
+  Member? _selectedMember;
 
   @override
   void initState() {
     super.initState();
     _databaseHelper = DatabaseHelper();
-    _expenses = _databaseHelper.getExpenses(widget.group.id); // Load existing expenses
+    _expenses = _databaseHelper.getExpenses(widget.group.id);
   }
 
   void _addExpense() async {
     if (_formKey.currentState!.validate() && _selectedMember != null) {
-      final description = _descriptionController.text;
-      final amount = double.parse(_amountController.text);
-
       final expense = Expense(
-        description: description,
-        person: _selectedMember!, // Use the selected Member
-        amount: amount,
+        description: _descriptionController.text,
+        person: _selectedMember!,
+        amount: double.parse(_amountController.text),
       );
       await _databaseHelper.insertExpense(expense, widget.group.id);
 
       setState(() {
-        _expenses = _databaseHelper.getExpenses(widget.group.id); // Refresh expenses
+        _expenses = _databaseHelper.getExpenses(widget.group.id);
       });
 
-      // Clear form
-      _descriptionController.clear();
-      _amountController.clear();
-      _selectedMember = null;
+      _clearForm();
     }
+  }
+
+  void _clearForm() {
+    _descriptionController.clear();
+    _amountController.clear();
+    _selectedMember = null;
   }
 
   @override
@@ -64,13 +64,11 @@ class _ExpensePageState extends State<ExpensePage> {
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(child: Text('Brak wydatków.'));
           } else {
-            List<Expense> expenses = snapshot.data!;
+            final expenses = snapshot.data!;
+            final summary = <String, double>{};
 
-            // PODSUMOWANIE: zlicz kwoty dla każdej osoby
-            Map<String, double> summary = {};
-            for (var expense in expenses) {
-              final name = expense.person.name;
-              summary[name] = (summary[name] ?? 0) + expense.amount;
+            for (var e in expenses) {
+              summary[e.person.name] = (summary[e.person.name] ?? 0) + e.amount;
             }
 
             return Column(
@@ -91,25 +89,20 @@ class _ExpensePageState extends State<ExpensePage> {
                   child: ListView.builder(
                     itemCount: expenses.length,
                     itemBuilder: (context, index) {
+                      final expense = expenses[index];
                       return ListTile(
-                        title: Text(expenses[index].description),
-                        subtitle: Text(
-                          '${expenses[index].person.name}: ${expenses[index].amount.toStringAsFixed(2)} zł',
-                        ),
+                        title: Text(expense.description),
+                        subtitle: Text('${expense.person.name}: ${expense.amount.toStringAsFixed(2)} zł'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: Icon(Icons.edit),
-                              onPressed: () {
-                                // TODO: edycja
-                              },
+                              onPressed: () => _editExpense(expense),
                             ),
                             IconButton(
                               icon: Icon(Icons.delete),
-                              onPressed: () {
-                                //_deleteExpense(expenses[index].id);
-                              },
+                              onPressed: () => _confirmDelete(expense),
                             ),
                           ],
                         ),
@@ -123,89 +116,139 @@ class _ExpensePageState extends State<ExpensePage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Dodaj wydatek'),
-                content: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: _descriptionController,
-                        decoration: InputDecoration(labelText: 'Opis'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Wprowadź opis';
-                          }
-                          return null;
-                        },
-                      ),
-                      DropdownButtonFormField<Member>(
-                        value: _selectedMember,
-                        decoration: InputDecoration(labelText: 'Osoba'),
-                        items: widget.group.members
-                            .map((member) => DropdownMenuItem(
-                          value: member,
-                          child: Text(member.name),
-                        ))
-                            .toList(),
-                        onChanged: (member) {
-                          setState(() {
-                            _selectedMember = member;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Wybierz osobę';
-                          }
-                          return null;
-                        },
-                      ),
-                      TextFormField(
-                        controller: _amountController,
-                        decoration: InputDecoration(labelText: 'Kwota'),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Wprowadź kwotę';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Wprowadź poprawną kwotę';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text('Anuluj'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        _addExpense();
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    child: Text('Dodaj'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
+        onPressed: _showAddDialog,
         child: Icon(Icons.add),
         tooltip: 'Dodaj wydatek',
       ),
+    );
+  }
+
+  void _showAddDialog() {
+    _clearForm();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return _buildExpenseDialog(
+          title: 'Dodaj wydatek',
+          onConfirm: () {
+            if (_formKey.currentState!.validate()) {
+              _addExpense();
+              Navigator.of(context).pop();
+            }
+          },
+        );
+      },
+    );
+  }
+
+  void _editExpense(Expense expense) {
+    _descriptionController.text = expense.description;
+    _amountController.text = expense.amount.toStringAsFixed(2);
+    _selectedMember = widget.group.members.firstWhere(
+          (m) => m.id == expense.person.id,
+      orElse: () => widget.group.members.first,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return _buildExpenseDialog(
+          title: 'Edytuj wydatek',
+          onConfirm: () async {
+            if (_formKey.currentState!.validate()) {
+              final updatedExpense = Expense(
+                id: expense.id,
+                description: _descriptionController.text,
+                amount: double.parse(_amountController.text),
+                person: _selectedMember!,
+              );
+              await _databaseHelper.updateExpense(updatedExpense, widget.group.id);
+              setState(() {
+                _expenses = _databaseHelper.getExpenses(widget.group.id);
+              });
+              _clearForm();
+              Navigator.of(context).pop();
+            }
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDelete(Expense expense) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Potwierdź usunięcie'),
+        content: Text('Czy na pewno chcesz usunąć ten wydatek?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Anuluj'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (expense.id != null) {
+                await _databaseHelper.deleteExpense(expense.id!);
+                setState(() {
+                  _expenses = _databaseHelper.getExpenses(widget.group.id);
+                });
+              }
+              Navigator.of(context).pop();
+            },
+            child: Text('Usuń'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseDialog({required String title, required VoidCallback onConfirm}) {
+    return AlertDialog(
+      title: Text(title),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _descriptionController,
+              decoration: InputDecoration(labelText: 'Opis'),
+              validator: (value) => value == null || value.isEmpty ? 'Wprowadź opis' : null,
+            ),
+            DropdownButtonFormField<Member>(
+              value: _selectedMember,
+              decoration: InputDecoration(labelText: 'Osoba'),
+              items: widget.group.members.map((member) {
+                return DropdownMenuItem(value: member, child: Text(member.name));
+              }).toList(),
+              onChanged: (member) => setState(() => _selectedMember = member),
+              validator: (value) => value == null ? 'Wybierz osobę' : null,
+            ),
+            TextFormField(
+              controller: _amountController,
+              decoration: InputDecoration(labelText: 'Kwota'),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Wprowadź kwotę';
+                if (double.tryParse(value) == null) return 'Wprowadź poprawną kwotę';
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Anuluj'),
+        ),
+        TextButton(
+          onPressed: onConfirm,
+          child: Text('Zapisz'),
+        ),
+      ],
     );
   }
 }
