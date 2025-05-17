@@ -8,22 +8,22 @@ import 'package:collection/collection.dart';
 class DatabaseHelper {
   static Database? _database;
 
-  // Inicjalizacja bazy danych
+  // Database Initialization
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
   }
 
-  // Tworzenie bazy danych
+  // Create Database
   _initDatabase() async {
     String path = join(await getDatabasesPath(), 'trip_database.db');
     return await openDatabase(path, version: 2, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
-  // Tworzenie tabel w bazie danych
+  // Create Tables in Database
   Future<void> _onCreate(Database db, int version) async {
-    // Tworzenie tabeli dla grup
+    // Groups Table
     await db.execute('''
       CREATE TABLE groups (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +33,7 @@ class DatabaseHelper {
       );
     ''');
 
-    // Tworzenie tabeli dla wydatków
+    // Expenses Table
     await db.execute('''
       CREATE TABLE expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,28 +46,26 @@ class DatabaseHelper {
     ''');
   }
 
-  // Funkcja migracji
+  // Migrate Database (Update)
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Można dodać kolejne operacje migracji, np. zmiana struktury tabel
+
     }
   }
 
-  // Funkcja czyszcząca dane z wszystkich tabel
+  // Clear tables
   Future<void> clearAllTables() async {
-    final db = await database; // Załaduj bazę danych
+    final db = await database; // Load Database
 
-    // Wyczyszczenie wszystkich tabel
-    await db.delete('groups');  // Usuwamy dane z tabeli 'groups'
-    await db.delete('expenses');  // Usuwamy dane z tabeli 'expenses'
-    // Jeżeli masz tabelę 'members', dodaj ją tutaj
-    // await db.delete('members');
+    // Clear Gruops and Expenses
+    await db.delete('groups');
+    await db.delete('expenses');
   }
-  // Dodawanie grupy
+  // Add Table Group
   insertGroup(TravelGroup group) async {
     final db = await database;
 
-    // Zamiana listy obiektów Member na listę stringów
+    // Member Objects Converted to String
     final membersString = group.members.map((member) => member.name).join(',');
 
     await db.insert(
@@ -75,13 +73,13 @@ class DatabaseHelper {
       {
         'country': group.country,
         'currency': group.currency,
-        'members': membersString, // Zapisujemy tylko imiona członków
+        'members': membersString,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  // Dodawanie wydatku
+  // Add Expense
   Future<void> insertExpense(Expense expense, int groupId) async {
     final db = await database;
     await db.insert(
@@ -89,14 +87,14 @@ class DatabaseHelper {
       {
         'group_id': groupId,
         'description': expense.description,
-        'person': expense.person.name,  // Zapisujemy tylko nazwisko osoby
+        'person': expense.person.name,
         'amount': expense.amount,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  // Pobieranie wszystkich grup
+  // Get Gruops
   Future<List<TravelGroup>> getGroups() async {
     final db = await database;
     final List<Map<String, dynamic>> groupMaps = await db.query('groups');
@@ -121,6 +119,8 @@ class DatabaseHelper {
 
     return groups;
   }
+
+  // Delete Gruops
   Future<void> deleteGroup(int groupId) async {
     final db = await database;
     
@@ -138,7 +138,7 @@ class DatabaseHelper {
   }
 
 
-  // Pobieranie wydatków dla grupy
+  // Get group's expenses
   Future<List<Expense>> getExpenses(int groupId) async {
     final db = await database;
     final result = await db.query(
@@ -150,7 +150,7 @@ class DatabaseHelper {
     return List.generate(result.length, (i) {
       final row = result[i];
       return Expense(
-        id: row['id'] != null ? row['id'] as int : 0, // lub lepiej: null jeśli `id` jest nullable
+        id: row['id'] != null ? row['id'] as int : 0,
         description: row['description'] as String,
         person: Member(name: row['person'] as String),
         amount: row['amount'] is int ? (row['amount'] as int).toDouble() : row['amount'] as double,
@@ -159,7 +159,7 @@ class DatabaseHelper {
 
   }
 
-  // Aktualizowanie wydatku
+  // Update Expense
   Future<void> updateExpense(Expense expense, int groupId) async {
     final db = await database;
     await db.update(
@@ -167,7 +167,6 @@ class DatabaseHelper {
       {
         'description': expense.description,
         'amount': expense.amount,
-        // 'person_id': expense.person.id,
         'group_id': groupId,
       },
       where: 'id = ?',
@@ -175,7 +174,7 @@ class DatabaseHelper {
     );
   }
 
-  // Usuwanie wydatku
+  // Delete Expense
   Future<void> deleteExpense(int expenseId) async {
     final db = await database;
     await db.delete(

@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 import 'database/database_helper.dart';
 
+/*
+* CalculateDebtPage
+*
+*
+* */
+
 class CalculateDebtPage extends StatefulWidget {
   final TravelGroup group;
 
@@ -37,8 +43,8 @@ class _CalculateDebtPageState extends State<CalculateDebtPage> {
             return Center(child: Text('Brak wydatków.'));
           } else {
             List<Expense> expenses = snapshot.data!;
-            // Obliczanie zadłużenia w grupie
-            // (W tym przypadku tylko prosty przykład z sumowaniem wydatków)
+            // Calculate Total Debt
+            // Add All Expenses
             double total = expenses.fold(0, (sum, e) => sum + e.amount);
             return Center(child: Text('Suma wydatków: $total zł'));
           }

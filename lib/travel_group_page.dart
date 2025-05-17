@@ -3,11 +3,17 @@ import 'group_list_page.dart';
 import 'create_group_page.dart';
 import 'database/database_helper.dart';
 
+/*
+* Travel Group
+* Main Page allows users to choose next action
+* Add New Group or Group List or Clear Data
+* */
+
 class TravelGroupPage extends StatelessWidget {
-  // Funkcja do czyszczenia tabel w bazie danych
+
   Future<void> _clearAllTables() async {
-    DatabaseHelper dbHelper = DatabaseHelper();
-    await dbHelper.clearAllTables();  // Wywołanie metody z DatabaseHelper
+    DatabaseHelper databaseHelper = DatabaseHelper();
+    await databaseHelper.clearAllTables();
   }
 
   @override
@@ -36,7 +42,7 @@ class TravelGroupPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              await _clearAllTables();  // Wywołanie funkcji do czyszczenia tabel
+              await _clearAllTables();
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => TravelGroupPage()),

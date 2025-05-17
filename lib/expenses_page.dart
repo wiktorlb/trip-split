@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 import 'database/database_helper.dart';
 
+/*
+* ExpensePage
+* allows users to view expenses of a specific Travel Group
+* */
+
 class ExpensePage extends StatefulWidget {
   final TravelGroup group;
 
@@ -79,7 +84,7 @@ class _ExpensePageState extends State<ExpensePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: summary.entries.map((entry) {
                       return Text(
-                        '${entry.key}: ${entry.value.toStringAsFixed(2)} zł',
+                        '${entry.key}: ${entry.value.toStringAsFixed(2)} ${widget.group.currency}',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       );
                     }).toList(),
@@ -92,7 +97,7 @@ class _ExpensePageState extends State<ExpensePage> {
                       final expense = expenses[index];
                       return ListTile(
                         title: Text(expense.description),
-                        subtitle: Text('${expense.person.name}: ${expense.amount.toStringAsFixed(2)} zł'),
+                        subtitle: Text('${expense.person.name}: ${expense.amount.toStringAsFixed(2)} ${widget.group.currency}'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -101,7 +106,7 @@ class _ExpensePageState extends State<ExpensePage> {
                               onPressed: () => _editExpense(expense),
                             ),
                             IconButton(
-                              icon: Icon(Icons.delete),
+                              icon: Icon(Icons.delete, color: Colors.red),
                               onPressed: () => _confirmDelete(expense),
                             ),
                           ],

@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 import 'database/database_helper.dart';
 
+/*
+* CreateGroupPage
+* allows users to create a new Travel Group
+* Travel Group includes: country, currency, members
+* */
+
 class CreateGroupPage extends StatefulWidget {
   @override
   _CreateGroupPageState createState() => _CreateGroupPageState();
@@ -55,7 +61,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     return Scaffold(
       appBar: AppBar(title: Text('Utwórz grupę')),
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(), // schowanie klawiatury po kliknięciu poza pole
+        onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),

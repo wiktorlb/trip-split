@@ -1,43 +1,36 @@
-// class TravelGroup {
-//   int id;
-//   String country;
-//   String currency;
-//   List<Expense> expenses;
-//
-//   final List<String>? members; //TEST
-//
-//   TravelGroup({required this.id, required this.country, required this.currency, List<Expense>? expenses, this.members})
-//       : expenses = expenses ?? [];
-// }
+/*
+* Models
+* Contains classes of database
+* and dynamic classes used in project
+* */
 
 class TravelGroup {
   int id;
   String country;
   String currency;
   List<Expense> expenses;
-  //final List<String> members; // Lista członków (nie nullable)
-  final List<Member> members; // Lista członków, którzy mają nazwę
+  final List<Member> members;
 
   TravelGroup({
     required this.id,
     required this.country,
     required this.currency,
     List<Expense>? expenses,
-    this.members = const [], // Domyślnie pusta lista
+    this.members = const [],
   }) : expenses = expenses ?? [];
 }
 
 
 class Expense {
   String description;
-  Member person; // Typ Member
+  Member person;
   double amount;
   final int? id;
-  final List<Member>? members; // Lista członków (obiektów Member)
+  final List<Member>? members;
 
   Expense({
     required this.description,
-    required this.person, // Tutaj oczekujemy obiektu Member
+    required this.person,
     required this.amount,
     this.id,
     this.members,
@@ -61,8 +54,4 @@ class Member {
   @override
   int get hashCode => id.hashCode;
 }
-// class Group {
-//   List<Member> members;
-//
-//   Group({this.members = const []});  // Dodajemy pustą listę jako domyślną wartość
-// }
+

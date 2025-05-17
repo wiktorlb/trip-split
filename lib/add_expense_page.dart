@@ -2,8 +2,17 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 import 'database/database_helper.dart';
 
+/*
+* AddExpensePage
+* allows users to add a new expense to a specific Travel Group
+* Expense includes: amount, description, person (that paid)
+* */
+
+
 class AddExpensePage extends StatefulWidget {
   final TravelGroup group;
+
+  // Constructor accepting the travel group to which the expense will be added
   AddExpensePage({required this.group});
 
   @override
@@ -11,11 +20,12 @@ class AddExpensePage extends StatefulWidget {
 }
 
 class _AddExpensePageState extends State<AddExpensePage> {
+  // Input Controllers
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
-  Member? _selectedPerson;  // Zmieniamy z String na Member
+  Member? _selectedPerson;  // selected person who paid
 
-  late DatabaseHelper _databaseHelper;
+  late DatabaseHelper _databaseHelper; // saving the expense
 
   @override
   void initState() {
@@ -23,6 +33,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
     _databaseHelper = DatabaseHelper();
   }
 
+  // Validates input and adds a new expense to the database
   _addExpense() async {
     final amount = double.tryParse(_amountController.text) ?? 0;
     final description = _descriptionController.text;
@@ -30,7 +41,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     if (description.isEmpty || person == null || amount == 0) return;
 
-    final member = person;  // <-- już jest typu Member
+    final member = person;
 
     final expense = Expense(
       description: description,
@@ -40,13 +51,15 @@ class _AddExpensePageState extends State<AddExpensePage> {
     );
 
     await _databaseHelper.insertExpense(expense, widget.group.id);
+
+    // Return to the previous screen
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Dodaj wydatek')),
+      appBar: AppBar(title: Text('Dodaj wydatek')), // App Bar Title
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -71,7 +84,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 items: widget.group.members.map((Member member) {
                   return DropdownMenuItem<Member>(
                     value: member,
-                    child: Text(member.name),  // Wyświetlamy nazwisko
+                    child: Text(member.name),
                   );
                 }).toList(),
                 onChanged: (Member? newValue) {
@@ -88,6 +101,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
               child: Text('Dodaj wydatek'),
             ),
             SizedBox(height: 20),
+            // Display List of Group Members
             Text('Członkowie grupy:'),
             if (widget.group.members.isNotEmpty)
               Column(
